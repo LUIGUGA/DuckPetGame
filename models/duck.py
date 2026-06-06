@@ -9,6 +9,26 @@ class DuckDad:
         self._is_smoker = True
         self._is_alcoholic = True
 
+    @property
+    def hunger(self):
+        return self._hunger
+
+    @property
+    def thirst(self):
+        return self._thirst
+
+    @property
+    def stress(self):
+        return self._stress
+
+    @property
+    def alcohol(self):
+        return self._alcohol
+
+    @property
+    def is_sick(self):
+        return self._is_sick
+
     # limites para não passar de 0 e 100
     def _check_limits(self):
         if self._hunger >= 100: 
