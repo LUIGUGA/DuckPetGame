@@ -1,5 +1,6 @@
 import random
 
+from core.save_system import save_game, load_game, delete_save, save_info
 from core.store import Store, Wallet
 from minigames.car_racing import CarRacing
 from minigames.dice_game import DiceGame
@@ -12,7 +13,6 @@ from ui.display import (
     tela_game_over,
 )
 
-
 class Game:
     def __init__(self, duck_name: str = "Pato", starting_coins: int = 100):
         self.duck = DuckDad(duck_name)
@@ -20,6 +20,22 @@ class Game:
         self.store = Store.default()
         self.turno = 0
         self.rodando = True
+
+    def salvar(self) -> None:
+        save_game(self.duck, self.wallet, self.turno)
+
+    def carregar(self, data: dict) -> None:
+        pato_data = data["pato"]
+        self.duck.name        = pato_data["nome"]
+        self.duck._hunger     = pato_data["fome"]
+        self.duck._thirst     = pato_data["sede"]
+        self.duck._stress     = pato_data["estresse"]
+        self.duck._alcohol    = pato_data["alcool"]
+        self.duck._is_sick    = pato_data["doente"]
+        self.duck._is_smoker  = pato_data["fumante"]
+        self.duck._is_alcoholic = pato_data["alcoolatra"]
+        self.wallet.coins     = data["moedas"]
+        self.turno            = data["turno"]
 
     def status_text(self) -> str:
         return (
@@ -87,7 +103,6 @@ class Game:
         mensagem_evento(f"{self.duck.name} diz: {frase}")
         self.duck._stress = max(0, self.duck._stress - 5)
 
-
     def _verificar_game_over(self) -> bool:
         if self.duck.hunger >= 100 and self.duck.stress >= 100:
             return True
@@ -95,17 +110,40 @@ class Game:
             return True
         return False
 
+    def _evento_aleatorio(self):
+        if random.random() > 0.2:
+            return
+
+        eventos = ["moedas", "doente", "fome", "sorte"]
+        escolha = random.choice(eventos)
+
+        if escolha == "moedas":
+            achadas = random.randint(5, 15)
+            self.wallet.earn(achadas)
+            mensagem_evento(f"Surpresa! {self.duck.name} achou {achadas} moedas perdidas no chão!")
+            
+        elif escolha == "doente":
+            self.duck._is_sick = True
+            mensagem_evento(f"Oh não! {self.duck.name} comeu um lixo estragado e ficou doente!")
+            
+        elif escolha == "fome":
+            self.duck._hunger = min(100, self.duck._hunger + 20)
+            mensagem_evento(f"{self.duck.name} correu muito atrás de um inseto e ficou com muita fome!")
+            
+        elif escolha == "sorte":
+            self.duck._stress = max(0, self.duck._stress - 20)
+            mensagem_evento(f"Que sorte! {self.duck.name} encontrou um lugar perfeito e relaxou bastante (-20 Estresse).")
 
     def rodar(self):
         while self.rodando:
             self.turno += 1
-
-            # 1. Exibe estado atual
             exibir_status(self.duck, self.wallet, self.turno)
 
-            # 2. Verifica game over
+            #  Verifica game over
             if self._verificar_game_over():
                 tela_game_over(self.duck, self.turno)
+                # Apaga o save ao perder
+                delete_save()
                 self.rodando = False
                 break
 
@@ -122,10 +160,14 @@ class Game:
             elif opcao == "5":
                 mensagem_evento("O tempo passou...")
             elif opcao == "0":
+                # Salva antes de sair
+                self.salvar()
                 print(f"\n  Até logo! {self.duck.name} vai sentir sua falta. 🦆")
                 self.rodando = False
                 break
             else:
-                mensagem_evento("Opção inválida. O pato te olhou torto.")
+                mensagem_evento("Opção inválida. O pato te encarou em silêncio.")
 
+            self._evento_aleatorio()
+            self.salvar()
             self.duck.pass_time()
