@@ -1,15 +1,67 @@
 from core.game_loop import Game
+from core.save_system import load_game, delete_save, save_info
+
+def _menu_inicial() -> str:
+    print("=" * 45)
+    print("      🦆  TERMINAL DUCK PET GAME  🦆")
+    print("=" * 45)
+    print()
+    print(save_info())
+    print()
+
+    data = load_game()
+    if data:
+        print("  O que deseja fazer?")
+        print("  [1] Continuar jogo salvo")
+        print("  [2] Novo jogo (apaga o save atual)")
+        print("  [0] Sair")
+        opcao = input("\n  Escolha: ").strip()
+        if opcao == "1":
+            return "continuar"
+        elif opcao == "2":
+            confirmacao = input(
+                "  Tem certeza? O save atual será APAGADO. (s/n): "
+            ).strip().lower()
+            if confirmacao == "s":
+                delete_save()
+                return "novo"
+            return _menu_inicial() 
+        else:
+            return "sair"
+    else:
+        print("  [1] Começar novo jogo")
+        print("  [0] Sair")
+        opcao = input("\n  Escolha: ").strip()
+        return "novo" if opcao == "1" else "sair"
+
+
+def _criar_novo_jogo() -> Game:
+    print()
+    nome = input("  Como vai se chamar seu pato? ").strip()
+    if not nome:
+        nome = "Duckinho"
+    game = Game(duck_name=nome, starting_coins=100)
+    print(f"\n  Bem-vindo, {nome}! Que a aventura comece. 🥚\n")
+    return game
 
 
 def main():
-    game = Game("Duckinho", starting_coins=100)
-    print("=== BEM-VINDO AO TERMINAL DUCK ===")
-    print("O jogo esta iniciando\n")
-    print(game.status_text())
-    print("\nLoja disponivel:")
-    print(game.shop_text())
-    print("\nPara comprar um item, chame game.buy(item_id) no codigo ou no terminal interativo.")
-    print("Para ganhar moedas jogando, chame game.play_race() no terminal interativo.")
+    decisao = _menu_inicial()
+
+    if decisao == "sair":
+        print("\n  Até logo! 👋")
+        return
+
+    # A correção lógica foi feita aqui em baixo:
+    if decisao == "continuar":
+        game = Game()
+        data = load_game()
+        game.carregar(data)
+        print(f"\n Jogo carregado! Continuando com {game.duck.name}...\n")
+    else:
+        game = _criar_novo_jogo()
+        
+    game.rodar()
 
 
 if __name__ == "__main__":
